@@ -3,118 +3,91 @@ import tensorflow as tf
 import os
 import numpy as np
 from utils import *
-from keras.preprocessing.image import smart_resize
-import cv2
+import scipy.io
+from tensorflow import keras
 
 
-def create_generators2(data_path=DATASET_PATH):
-    train_mat_file_path = []
-    validation_mat_file_path = []
+def create_generators2(data_path=DATASET_PATH, SHG = True):
+    train_mat_file_paths = []
+    test_mat_file_paths = []
 
-    'Returns three generators'
-    validation_image_paths = []
-    validation_label_paths = []
-    # for i in range(1,2):
-    for i in range(1,VALIDATION_DATASET_SIZE + 1):
-      if i == 100:
-        patient = 'patient' + str(i)
-      elif i > 9:
-        patient = 'patient0' + str(i)
-      else:
-        patient = 'patient00' + str(i)
-
-      folder_path = os.path.join(data_path, patient)
-      validation_image_paths.append(os.path.join(folder_path, patient+'_frame01.nii.gz'))
-      validation_image_paths.append(os.path.join(folder_path, patient+'_frame02.nii.gz'))
-      validation_label_paths.append(os.path.join(folder_path, patient+'_frame01_gt.nii.gz'))
-      validation_label_paths.append(os.path.join(folder_path, patient+'_frame02_gt.nii.gz'))
-
-    train_image_paths = []
-    train_label_paths = []
-    # for i in range(2, 3):
-    for i in range(VALIDATION_DATASET_SIZE + 1, DATASET_SIZE + 1):
-      if i == 100:
-        patient = 'patient' + str(i)
-      elif i > 9:
-        patient = 'patient0' + str(i)
-      else:
-        patient = 'patient00' + str(i)
-
-      folder_path = os.path.join(data_path, patient)
-      train_image_paths.append(os.path.join(folder_path, patient+'_frame01.nii.gz'))
-      train_image_paths.append(os.path.join(folder_path, patient+'_frame02.nii.gz'))
-      train_label_paths.append(os.path.join(folder_path, patient+'_frame01_gt.nii.gz'))
-      train_label_paths.append(os.path.join(folder_path, patient+'_frame02_gt.nii.gz'))
+    for file_name in os.listdir(data_path):
+        if len(test_mat_file_paths) < TEST_DATASET_SIZE:
+            test_mat_file_paths.append(os.path.join(data_path, file_name))
+        else:
+            train_mat_file_paths.append(os.path.join(data_path, file_name))
      
-    train_data_generator = DataGeneratorClassifier2(train_image_paths, train_label_paths,TRAINING_BATCH_SIZE, TRAINING_IMAGE_SIZE)
-    validation_data_generator = DataGeneratorClassifier2(validation_image_paths, validation_label_paths, VALIDATION_BATCH_SIZE, VALIDATION_IMAGE_SIZE, transform=False)
-    return train_data_generator, validation_data_generator
+    train_data_generator = DataGeneratorClassifier2(train_mat_file_paths, BATCH_SIZE, TRAINING_IMAGE_SIZE, SHG=SHG)
+    test_data_generator = DataGeneratorClassifier2(test_mat_file_paths, BATCH_SIZE, TEST_IMAGE_SIZE, transform=False, SHG=SHG)
+    return train_data_generator, test_data_generator
 
 
 class DataGeneratorClassifier2(tf.keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, list_labels, batch_size=1, image_size=(None,None,None), data_path=DATASET_PATH, n_channels=NUMBER_OF_CHANNELS, shuffle=SHUFFLE_DATA, transform=TRANSFORM):
+    def __init__(self, list_IDs, batch_size=BATCH_SIZE, image_size=TRAINING_IMAGE_SIZE, shuffle=SHUFFLE_DATA, transform=True, nbr_classes=NBR_CLASSES, SHG=True):
         'Initialisation'
-        self.classes = os.listdir(data_path)
         self.image_size = image_size
-        self.batch_size = BATCH_SIZE
+        self.batch_size = batch_size
         self.list_IDs = list_IDs
-        self.list_labels = list_labels
-        self.n_channels = n_channels
         self.shuffle = shuffle
+        self.SGH = SHG
         self.on_epoch_end()
-        self.data_path=data_path
         self.transform=transform
+        self.nbr_classes = nbr_classes
+        self.X_data = np.zeros((len(list_IDs), self.image_size[0], self.image_size[1], self.image_size[2]))
+        self.Y_data = np.zeros((len(list_IDs), self.image_size[0], self.image_size[1]))
+        self.load_data()
+        
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs)))
+        return int(np.floor(len(self.list_IDs))/self.batch_size)
 
     def __getitem__(self, index):
         'Generate one batch of data'
 
-        list_IDs_temp = []
-        list_labels_temp = []
-        # for i in range(index*self.batch_size, (index+1)*self.batch_size):
-        #   list_IDs_temp.append(self.list_IDs[i])
-        #   list_labels_temp.append(self.list_labels[i])
-        list_IDs_temp.append(self.list_IDs[index])
-        list_labels_temp.append(self.list_labels[index])
+        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
 
+        X = np.zeros((self.batch_size, self.image_size[0], self.image_size[1], self.image_size[2]))
+        Y = np.zeros((self.batch_size, self.image_size[0], self.image_size[1], self.nbr_classes))
 
-        # indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
-        # list_IDs_temp = self.list_IDs[indexes]
-        # list_labels_temp = self.list_labels[indexes]
-        X, y = self.__data_generation(list_IDs_temp, list_labels_temp)
+        for i, idx in enumerate(indexes):
+            X[i,:,:,:] = self.X_data[idx]
+            Y[i,:,:,:] = self.Y_data[idx]
         
-        return X, y
+        return X,Y
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(len(self.list_IDs))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
-    
-    def __data_generation(self, list_IDs_temp, list_labels_temp):
-        'Generates data containing batch_size samples' # X : (n_samples, *image_size, n_channels)
+
+    def uniform_label_discretisation(self, labels):
+        '''Retourne un set d'images (de référence) échelonnées sur 'classes' classes
+        de manière uniforme et contenant autant d'images que le set data'''
+        shape = np.shape(labels)
+        n = shape[0]
+        bins = [(x+1)/self.nbr_classes for x in range(self.nbr_classes-1)]
+        discret_ = keras.layers.experimental.preprocessing.Discretization(bins = bins)
+        data_discret = discret_(labels)
+        data_discret = data_discret.numpy()
+
+        return data_discret
+
+    def load_data(self):
+        Y_temp = np.zeros((len(self.list_IDs), self.image_size[0], self.image_size[1]))
+
+        for i, path in enumerate(self.list_IDs):
+            data = scipy.io.loadmat(path)
+
+            for j in range(data['Fin_MM_avgZ'].shape[2]):
+                for l in range(data['Fin_MM_avgZ'].shape[3]):
+                    self.X_data[i,:,:,data['Fin_MM_avgZ'].shape[2]*j+l] = data['Fin_MM_avgZ'][:,:,i,j]
+
+            if self.SGH:
+                Y_temp[i,:,:] = data['SHGZ'][:,:,0]
+            else:
+                Y_temp[i,:,:] = data['TPEFZ'][:,:,0]
         
-        # for i in range(len(list_IDs_temp)):
-        Xi = load_nii(list_IDs_temp[0])[0]
-        Yi = load_nii(list_labels_temp[0])[0]
-      
-        size=Xi.shape
-        xcrop = size[0]%DIVISIBILITY_FACTOR
-        ycrop = size[1]%DIVISIBILITY_FACTOR
-
-        Xi = Xi[:size[0]-xcrop,:size[1]-ycrop,:]
-        Yi = Yi[:size[0]-xcrop,:size[1]-ycrop,:]
-
-        X = np.expand_dims(np.expand_dims(Xi, 3), 0)
-        Y = tf.one_hot(np.expand_dims(Yi, 0).astype(np.int32), NBR_CLASSES, axis=-1)
-
-        # if self.transform:
-        #     data_augmentation = tf.keras.Sequential([layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-        #     layers.experimental.preprocessing.RandomRotation(0.8)])
-        #     X=data_augmentation(X)
-
-        return X, Y
+        self.Y_data = self.uniform_label_discretisation(Y_temp)
