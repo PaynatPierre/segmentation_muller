@@ -3,3 +3,4 @@ MuellerECM
 resources/*
 unknowed_files/*
 DataPola.h5
+src/__pycache__/*
