@@ -8,15 +8,15 @@ data= h5py.File('../DataPola.h5','r')
 print(data['Im1/TPEF'].shape)
 
 for i in range(1,12):
-    im = Image.fromarray(np.array(data[f'Im{i}/TPEF'])*25)
-    if im.mode != 'RGB':
-        im = im.convert('RGB')
-    im.save(f"label_TPEF_{i}_nelson.jpeg")
+    # im = Image.fromarray(np.array(data[f'Im{i}/LinR'])*25)
+    # if im.mode != 'RGB':
+    #     im = im.convert('RGB')
+    # im.save(f"label_TPEF_{i}_nelson.jpeg")
 
-    im = Image.fromarray(np.array(data[f'Im{i}/SHG'])*25)
+    im = Image.fromarray(np.array(data[f'Im{i}/LinR'])*255)
     if im.mode != 'RGB':
         im = im.convert('RGB')
-    im.save(f"label_SHG_{i}_nelson.jpeg")
+    im.save(f"data_LinR_{i}_nelson.jpeg")
 
 
 # for path in os.listdir('./../data/'):
