@@ -57,7 +57,7 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
             X[i,:,:,:] = self.X_data[idx]
             Y[i,:,:] = self.Y_data[idx]
         
-        return X,Y
+        return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
