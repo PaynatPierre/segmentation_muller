@@ -43,10 +43,18 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
 
     def __len__(self):
         'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs))/self.batch_size)
+        if self.transform:
+            return int(np.floor(len(self.list_IDs))/self.batch_size) * DATA_AUGMENTATION_AMPLIFICATION
+        else:
+            return int(np.floor(len(self.list_IDs))/self.batch_size)
 
     def __getitem__(self, index):
         'Generate one batch of data'
+
+        if self.transform:
+            index = index % int(np.floor(len(self.list_IDs))/self.batch_size)
+            if index == 0:
+                self.on_epoch_end()
 
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
 
@@ -57,7 +65,43 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
             X[i,:,:,:] = self.X_data[idx]
             Y[i,:,:] = self.Y_data[idx]
         
+        if self.transform:
+            X,Y = self.batch_augmentation(X,Y)
+        
         return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
+
+    def batch_augmentation(self, X, Y):
+        new_X = np.zeros(X.shape)
+        new_Y = np.zeros(Y.shape)
+        
+        for i in range(len(X)):
+            tmp_Xi = X[i,:,:,:]
+            tmp_Yi = Y[i,:,:]
+
+            # mirror effect following horizontal axis
+            epsilon = np.random.rand()
+            if epsilon > 0.5:
+                tmp_Xi = np.flip(tmp_Xi,1)
+                tmp_Yi = np.flip(tmp_Yi,1)
+
+            # mirror effect following vertical axis
+            epsilon = np.random.rand()
+            if epsilon > 0.5:
+                tmp_Xi = np.flip(tmp_Xi,2)
+                tmp_Yi = np.flip(tmp_Yi,2)
+
+            # rotation effect
+            epsilon = np.random.randint(4)
+            tmp_Xi = np.rot90(tmp_Xi,epsilon, (1,2))
+            tmp_Yi = np.rot90(tmp_Yi,epsilon, (1,2))
+
+
+
+
+            new_X[i,:,:,:] = tmp_Xi
+            new_Y[i,:,:] = tmp_Yi
+
+        return new_X, new_Y
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
