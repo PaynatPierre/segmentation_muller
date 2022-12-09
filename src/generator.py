@@ -79,7 +79,8 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
 
     def load_data(self):
 
-        Y_data_tmp = np.zeros((len(self.list_IDs), self.image_size[0], self.image_size[1]))
+        # Y_data_tmp = np.zeros((len(self.list_IDs), self.image_size[0], self.image_size[1]))
+        Y_data_tmp = np.zeros((len(self.list_IDs), self.image_size_crop[0], self.image_size_crop[1]))
 
         nbr_pixel_to_crop_first_axe = self.image_size[0]%DIVISIBILITY_FACTOR
         nbr_pixel_to_crop_second_axe = self.image_size[1]%DIVISIBILITY_FACTOR
@@ -97,11 +98,11 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
                     self.X_data[i,:,:,data['Fin_MM_avgZ'].shape[2]*j+l] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
 
             if self.SGH:
-                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['SHGZ'][:,:,0]))
+                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['SHGZ'][:,:,0][:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]))
             else:
-                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['TPEFZ'][:,:,0]))
+                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['TPEFZ'][:,:,0][:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]))
         
-        self.Y_data = self.uniform_label_discretisation(Y_data_tmp)[:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
+        self.Y_data = self.uniform_label_discretisation(Y_data_tmp)#[:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
 
 def show_data():
     train_gen, test_gen =create_generators2(SHG=True)
