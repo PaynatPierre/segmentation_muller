@@ -69,7 +69,7 @@ def micro_unet(pretrained_weights = PRETRAINED_WEIGHTS,input_size = (TRAINING_IM
     conv9 = Conv2D(8, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
     conv9 = InstanceNormalization()(conv9)
 
-    conv10 = Conv2D(6, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
+    conv10 = Conv2D(10, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(conv9)
     conv10 = InstanceNormalization()(conv10)
     conv10 = Conv2D(NBR_CLASSES, 1, activation = 'softmax')(conv10)
 

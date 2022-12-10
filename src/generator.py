@@ -18,7 +18,7 @@ def create_generators2(data_path=DATASET_PATH, SHG = True):
         else:
             train_mat_file_paths.append(os.path.join(data_path, file_name))
      
-    train_data_generator = DataGeneratorClassifier2(train_mat_file_paths, SHG=SHG)
+    train_data_generator = DataGeneratorClassifier2(train_mat_file_paths, SHG=SHG, transform=TRAIN_AUGMENTATION)
     test_data_generator = DataGeneratorClassifier2(test_mat_file_paths, image_size=TEST_IMAGE_SIZE, image_size_crop=TEST_IMAGE_SIZE_CROP, transform=False, SHG=SHG)
     return train_data_generator, test_data_generator
 
@@ -68,6 +68,8 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
         if self.transform:
             X,Y = self.batch_augmentation(X,Y)
         
+        # print(X.shape)
+        # print(Y.shape)
         return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
 
     def batch_augmentation(self, X, Y):
@@ -81,25 +83,50 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
             # mirror effect following horizontal axis
             epsilon = np.random.rand()
             if epsilon > 0.5:
-                tmp_Xi = np.flip(tmp_Xi,1)
-                tmp_Yi = np.flip(tmp_Yi,1)
+                tmp_Xi = np.flip(tmp_Xi,0)
+                tmp_Yi = np.flip(tmp_Yi,0)
 
             # mirror effect following vertical axis
             epsilon = np.random.rand()
             if epsilon > 0.5:
-                tmp_Xi = np.flip(tmp_Xi,2)
-                tmp_Yi = np.flip(tmp_Yi,2)
+                tmp_Xi = np.flip(tmp_Xi,1)
+                tmp_Yi = np.flip(tmp_Yi,1)
 
             # rotation effect
             epsilon = np.random.randint(4)
-            tmp_Xi = np.rot90(tmp_Xi,epsilon, (1,2))
-            tmp_Yi = np.rot90(tmp_Yi,epsilon, (1,2))
+            tmp_Xi = np.rot90(tmp_Xi,epsilon, (0,1))
+            tmp_Yi = np.rot90(tmp_Yi,epsilon, (0,1))
 
-
-
+            #gaussian noise
+            for j in range(tmp_Xi.shape[-1]):
+                std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03
+                noise = np.random.normal(0,std,tmp_Xi[:,:,j].shape)
+                tmp_Xi[:,:,j] = tmp_Xi[:,:,j] + noise
 
             new_X[i,:,:,:] = tmp_Xi
             new_Y[i,:,:] = tmp_Yi
+
+        # random crop horizontal
+        epsilon = np.random.randint(((MAX_CROP_CONSERVATION_FACTOR)*self.image_size_crop[1])//DIVISIBILITY_FACTOR)
+        nbr_pixel_to_crop = epsilon*DIVISIBILITY_FACTOR
+
+        if nbr_pixel_to_crop != 0:
+            nbr_pixel_to_crop_left = np.random.randint(nbr_pixel_to_crop + 1)
+            nbr_pixel_to_crop_right = nbr_pixel_to_crop - nbr_pixel_to_crop_left
+
+            new_X = new_X[:,:,nbr_pixel_to_crop_left:new_X.shape[2]-nbr_pixel_to_crop_right,:]
+            new_Y = new_Y[:,:,nbr_pixel_to_crop_left:new_Y.shape[2]-nbr_pixel_to_crop_right]
+
+        # random crop vertical
+        epsilon = np.random.randint(((MAX_CROP_CONSERVATION_FACTOR)*self.image_size_crop[0])//DIVISIBILITY_FACTOR)
+        nbr_pixel_to_crop = epsilon*DIVISIBILITY_FACTOR
+
+        if nbr_pixel_to_crop != 0:
+            nbr_pixel_to_crop_top = np.random.randint(nbr_pixel_to_crop + 1)
+            nbr_pixel_to_crop_bottom = nbr_pixel_to_crop - nbr_pixel_to_crop_top
+
+            new_X = new_X[:,nbr_pixel_to_crop_top:new_X.shape[1]-nbr_pixel_to_crop_bottom,:,:]
+            new_Y = new_Y[:,nbr_pixel_to_crop_top:new_Y.shape[1]-nbr_pixel_to_crop_bottom,:]
 
         return new_X, new_Y
 
@@ -142,9 +169,9 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
                     self.X_data[i,:,:,data['Fin_MM_avgZ'].shape[2]*j+l] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
 
             if self.SGH:
-                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['SHGZ'][:,:,0][:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]))
+                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['SHGZ'][nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom),0]))
             else:
-                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['TPEFZ'][:,:,0][:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]))
+                Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['TPEFZ'][nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom),0]))
         
         self.Y_data = self.uniform_label_discretisation(Y_data_tmp)#[:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
 
