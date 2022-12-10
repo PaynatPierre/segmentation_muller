@@ -99,7 +99,7 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
 
             #gaussian noise
             for j in range(tmp_Xi.shape[-1]):
-                std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03
+                std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03*np.rand.rand()
                 noise = np.random.normal(0,std,tmp_Xi[:,:,j].shape)
                 tmp_Xi[:,:,j] = tmp_Xi[:,:,j] + noise
 
