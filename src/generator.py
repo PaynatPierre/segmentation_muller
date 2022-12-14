@@ -25,7 +25,7 @@ def create_generators2(data_path=DATASET_PATH, SHG = True):
 
 class DataGeneratorClassifier2(tf.keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, batch_size=BATCH_SIZE, image_size=TRAINING_IMAGE_SIZE, image_size_crop=TRAINING_IMAGE_SIZE_CROP, shuffle=SHUFFLE_DATA, transform=True, nbr_classes=NBR_CLASSES, SHG=True):
+    def __init__(self, list_IDs, batch_size=BATCH_SIZE, image_size=TRAINING_IMAGE_SIZE, image_size_crop=TRAINING_IMAGE_SIZE_CROP, shuffle=SHUFFLE_DATA, transform=False, nbr_classes=NBR_CLASSES, SHG=True):
         'Initialisation'
         self.image_size = image_size
         self.image_size_crop = image_size_crop
@@ -70,7 +70,9 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
         
         # print(X.shape)
         # print(Y.shape)
-        return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
+        #return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
+        return X,Y.astype(np.int32)
+
 
     def batch_augmentation(self, X, Y):
         new_X = np.zeros(X.shape)
@@ -99,7 +101,7 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
 
             #gaussian noise
             for j in range(tmp_Xi.shape[-1]):
-                std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03*np.rand.rand()
+                std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03*np.random.rand()
                 noise = np.random.normal(0,std,tmp_Xi[:,:,j].shape)
                 tmp_Xi[:,:,j] = tmp_Xi[:,:,j] + noise
 
@@ -180,7 +182,7 @@ def show_data():
 
     x,y = train_gen.__getitem__(0)
     print('x shape is : ' + str(x.shape))
-    print('x shape is : ' + str(y.shape))
+    print('y shape is : ' + str(y.shape))
 
     print(x)
     print(np.min(x))

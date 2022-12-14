@@ -5,3 +5,4 @@ unknowed_files/*
 DataPola.h5
 src/__pycache__/*
 models/*
+*.jpeg
