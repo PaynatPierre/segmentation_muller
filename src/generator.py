@@ -70,8 +70,8 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
         
         # print(X.shape)
         # print(Y.shape)
-        #return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
-        return X,Y.astype(np.int32)
+        return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
+        #return X,Y.astype(np.int32)
 
 
     def batch_augmentation(self, X, Y):
