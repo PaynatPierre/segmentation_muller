@@ -19,14 +19,15 @@ def create_generators2(data_path=DATASET_PATH, SHG = True):
             train_mat_file_paths.append(os.path.join(data_path, file_name))
      
     train_data_generator = DataGeneratorClassifier2(train_mat_file_paths, SHG=SHG, transform=TRAIN_AUGMENTATION)
-    test_data_generator = DataGeneratorClassifier2(test_mat_file_paths, image_size=TEST_IMAGE_SIZE, image_size_crop=TEST_IMAGE_SIZE_CROP, transform=False, SHG=SHG)
+    test_data_generator = DataGeneratorClassifier2(test_mat_file_paths, image_size=TEST_IMAGE_SIZE, image_size_crop=TEST_IMAGE_SIZE_CROP, transform=False, SHG=SHG, test=True)
     return train_data_generator, test_data_generator
 
 
 class DataGeneratorClassifier2(tf.keras.utils.Sequence):
     'Generates data for Keras'
-    def __init__(self, list_IDs, batch_size=BATCH_SIZE, image_size=TRAINING_IMAGE_SIZE, image_size_crop=TRAINING_IMAGE_SIZE_CROP, shuffle=SHUFFLE_DATA, transform=False, nbr_classes=NBR_CLASSES, SHG=True):
+    def __init__(self, list_IDs, batch_size=BATCH_SIZE, image_size=TRAINING_IMAGE_SIZE, image_size_crop=TRAINING_IMAGE_SIZE_CROP, shuffle=SHUFFLE_DATA, transform=False, nbr_classes=NBR_CLASSES, SHG=True, test = False):
         'Initialisation'
+        self.test = test
         self.image_size = image_size
         self.image_size_crop = image_size_crop
         self.batch_size = batch_size
@@ -68,6 +69,21 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
         if self.transform:
             X,Y = self.batch_augmentation(X,Y)
         
+
+        # if not self.test:
+        #     for i in range(X.shape[3]):
+        #         im = Image.fromarray(np.array(X)[0,:,:,i]*255)
+        #         if im.mode != 'RGB':
+        #             im = im.convert('RGB')
+        #         im.save(f"./tmp/train_data_canal_{i}.jpeg")
+
+        #     tmp = tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
+        #     for i in range(tmp.shape[3]):
+        #         im = Image.fromarray(np.array(tmp)[0,:,:,i]*255)
+        #         if im.mode != 'RGB':
+        #             im = im.convert('RGB')
+        #         im.save(f"./tmp/train_label_classe_{i}.jpeg")
+
         # print(X.shape)
         # print(Y.shape)
         return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
@@ -166,15 +182,30 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
         for i, path in enumerate(self.list_IDs):
             data = scipy.io.loadmat(path)
 
+            # for j in range(data['Fin_MM_avgZ'].shape[2]):
+            #     for l in range(data['Fin_MM_avgZ'].shape[3]):
+            #         self.X_data[i,:,:,data['Fin_MM_avgZ'].shape[2]*j+l] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
+
             for j in range(data['Fin_MM_avgZ'].shape[2]):
                 for l in range(data['Fin_MM_avgZ'].shape[3]):
-                    self.X_data[i,:,:,data['Fin_MM_avgZ'].shape[2]*j+l] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
+                    if data['Fin_MM_avgZ'].shape[2]*j+l == 0:
+                        self.X_data[i,:,:,0] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
+                    elif data['Fin_MM_avgZ'].shape[2]*j+l == 11:
+                        self.X_data[i,:,:,1] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
+                    elif data['Fin_MM_avgZ'].shape[2]*j+l == 14:
+                        self.X_data[i,:,:,2] = prep.norm_data(prep.Grubbs_data(data['Fin_MM_avgZ'][:,:,j,l]))[nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
 
             if self.SGH:
                 Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['SHGZ'][nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom),0]))
             else:
                 Y_data_tmp[i,:,:] = prep.norm_data(prep.Grubbs_data(data['TPEFZ'][nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom),0]))
         
+            # if self.SGH:
+            #     Y_data_tmp[i,:,:] = data['SHGZ'][nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom),0]
+            # else:
+            #     Y_data_tmp[i,:,:] = data['TPEFZ'][nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom),0]
+        
+
         self.Y_data = self.uniform_label_discretisation(Y_data_tmp)#[:,nbr_pixel_to_crop_left:(-nbr_pixel_to_crop_right),nbr_pixel_to_crop_top:(-nbr_pixel_to_crop_bottom)]
 
 def show_data():
@@ -194,7 +225,7 @@ def show_data():
         im.save(f"data_canal_{j}.jpeg")
 
     for i in range(len(y)):
-        im = Image.fromarray(y[i,:,:]*25)
+        im = Image.fromarray((np.argmax(y[i,:,:], axis=-1).astype(np.uint8))*25)
         if im.mode != 'RGB':
             im = im.convert('RGB')
         im.save(f"label_{i}.jpeg")
