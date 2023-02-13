@@ -5,8 +5,9 @@ DIVISIBILITY_FACTOR = 16
 PRETRAINED_WEIGHTS = None
 LEARNING_RATE = 0.1
 NBR_EPOCH = 500
-CHECKPOINT_PATH = './../models/try_3/my_checkpoint.ckpt'
+CHECKPOINT_PATH = './../models/try_11/my_checkpoint.ckpt'
 SAVE_TRAIN_SAMPLE_INTERVAL = 100
+GRADIANT_ACCUMULATION = 16
 
 # dataset parametres
 DATASET_PATH = './../data/'
