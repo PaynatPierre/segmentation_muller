@@ -8,10 +8,11 @@ from PIL import Image
 import preprocess as prep
 
 '''
-This function
-
+This function takes a path directory and SHG a boolean indicating whether the data is generated using Second Harmonic Generation (SHG).
+returns train and test data
 '''
 def create_generators2(data_path=DATASET_PATH, SHG = True):
+    # Initialize lists to store file paths for train and test data
     train_mat_file_paths = []
     test_mat_file_paths = []
 
