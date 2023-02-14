@@ -1,8 +1,5 @@
 # training parametres
-BATCH_SIZE = 2 ##on scanne toutes les données 2 par 2 , à la fin on passe à une autre epoch ?
-#mettre de la gradient accumulation
-#en général gros batch size pour bien moyenner les données
-#il faudrait faire une retropopagation sur plusieurs batch 
+BATCH_SIZE = 2 
 SHUFFLE_DATA = True
 DIVISIBILITY_FACTOR = 16
 PRETRAINED_WEIGHTS = None
@@ -24,5 +21,5 @@ TEST_IMAGE_SIZE_CROP = (TEST_IMAGE_SIZE[0] - TEST_IMAGE_SIZE[0]%DIVISIBILITY_FAC
 
 # data augmentation parametres
 TRAIN_AUGMENTATION = True
-DATA_AUGMENTATION_AMPLIFICATION = 200 # act as if there were 200 times more data than reality in order to do less validation tests and waste less time than if we really validated the 4 data
+DATA_AUGMENTATION_AMPLIFICATION = 200
 MAX_CROP_CONSERVATION_FACTOR = 2/3
