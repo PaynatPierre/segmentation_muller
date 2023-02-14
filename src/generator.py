@@ -121,10 +121,8 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
         #             im = im.convert('RGB')
         #         im.save(f"./tmp/train_label_classe_{i}.jpeg")
 
-        # print(X.shape)
-        # print(Y.shape)
-        return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1)
-        #return X,Y.astype(np.int32)
+        return X,tf.one_hot(Y.astype(np.int32), NBR_CLASSES, axis=-1) #classification
+        # return X,Y/NBR_CLASSES #regression
 
 
     '''
@@ -161,36 +159,36 @@ class DataGeneratorClassifier2(tf.keras.utils.Sequence):
             tmp_Xi = np.rot90(tmp_Xi,epsilon, (0,1))
             tmp_Yi = np.rot90(tmp_Yi,epsilon, (0,1))
 
-            # gaussian noise
-            for j in range(tmp_Xi.shape[-1]):
-                std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03*np.random.rand()
-                noise = np.random.normal(0,std,tmp_Xi[:,:,j].shape)
-                tmp_Xi[:,:,j] = tmp_Xi[:,:,j] + noise
+            # #gaussian noise
+            # for j in range(tmp_Xi.shape[-1]):
+            #     std = (np.max(tmp_Xi[:,:,j]) - np.min(tmp_Xi[:,:,j]))*0.03*np.random.rand()
+            #     noise = np.random.normal(0,std,tmp_Xi[:,:,j].shape)
+            #     tmp_Xi[:,:,j] = tmp_Xi[:,:,j] + noise
 
             new_X[i,:,:,:] = tmp_Xi
             new_Y[i,:,:] = tmp_Yi
 
-        # random crop horizontal
-        epsilon = np.random.randint(((MAX_CROP_CONSERVATION_FACTOR)*self.image_size_crop[1])//DIVISIBILITY_FACTOR)
-        nbr_pixel_to_crop = epsilon*DIVISIBILITY_FACTOR
+        # # random crop horizontal
+        # epsilon = np.random.randint(((MAX_CROP_CONSERVATION_FACTOR)*self.image_size_crop[1])//DIVISIBILITY_FACTOR)
+        # nbr_pixel_to_crop = epsilon*DIVISIBILITY_FACTOR
 
-        if nbr_pixel_to_crop != 0:
-            nbr_pixel_to_crop_left = np.random.randint(nbr_pixel_to_crop + 1)
-            nbr_pixel_to_crop_right = nbr_pixel_to_crop - nbr_pixel_to_crop_left
+        # if nbr_pixel_to_crop != 0:
+        #     nbr_pixel_to_crop_left = np.random.randint(nbr_pixel_to_crop + 1)
+        #     nbr_pixel_to_crop_right = nbr_pixel_to_crop - nbr_pixel_to_crop_left
 
-            new_X = new_X[:,:,nbr_pixel_to_crop_left:new_X.shape[2]-nbr_pixel_to_crop_right,:]
-            new_Y = new_Y[:,:,nbr_pixel_to_crop_left:new_Y.shape[2]-nbr_pixel_to_crop_right]
+        #     new_X = new_X[:,:,nbr_pixel_to_crop_left:new_X.shape[2]-nbr_pixel_to_crop_right,:]
+        #     new_Y = new_Y[:,:,nbr_pixel_to_crop_left:new_Y.shape[2]-nbr_pixel_to_crop_right]
 
-        # random crop vertical
-        epsilon = np.random.randint(((MAX_CROP_CONSERVATION_FACTOR)*self.image_size_crop[0])//DIVISIBILITY_FACTOR)
-        nbr_pixel_to_crop = epsilon*DIVISIBILITY_FACTOR
+        # # random crop vertical
+        # epsilon = np.random.randint(((MAX_CROP_CONSERVATION_FACTOR)*self.image_size_crop[0])//DIVISIBILITY_FACTOR)
+        # nbr_pixel_to_crop = epsilon*DIVISIBILITY_FACTOR
 
-        if nbr_pixel_to_crop != 0:
-            nbr_pixel_to_crop_top = np.random.randint(nbr_pixel_to_crop + 1)
-            nbr_pixel_to_crop_bottom = nbr_pixel_to_crop - nbr_pixel_to_crop_top
+        # if nbr_pixel_to_crop != 0:
+        #     nbr_pixel_to_crop_top = np.random.randint(nbr_pixel_to_crop + 1)
+        #     nbr_pixel_to_crop_bottom = nbr_pixel_to_crop - nbr_pixel_to_crop_top
 
-            new_X = new_X[:,nbr_pixel_to_crop_top:new_X.shape[1]-nbr_pixel_to_crop_bottom,:,:]
-            new_Y = new_Y[:,nbr_pixel_to_crop_top:new_Y.shape[1]-nbr_pixel_to_crop_bottom,:]
+        #     new_X = new_X[:,nbr_pixel_to_crop_top:new_X.shape[1]-nbr_pixel_to_crop_bottom,:,:]
+        #     new_Y = new_Y[:,nbr_pixel_to_crop_top:new_Y.shape[1]-nbr_pixel_to_crop_bottom,:]
 
         return new_X, new_Y
 
