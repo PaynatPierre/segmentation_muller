@@ -100,7 +100,7 @@ def unet_S5(pretrained_weights = PRETRAINED_WEIGHTS,input_size = (TRAINING_IMAGE
     return model
 
 def unet_S4(pretrained_weights = PRETRAINED_WEIGHTS,input_size = (TRAINING_IMAGE_SIZE_CROP[0],TRAINING_IMAGE_SIZE_CROP[1],TRAINING_IMAGE_SIZE_CROP[2])):
-#     inputs = tf.random.normal(input_size)
+    # inputs = tf.random.normal(input_size)
     tf.random.set_seed(1234)
     inputs = Input(input_size, batch_size = BATCH_SIZE)
     conv1 = Conv2D(64, 3, activation = 'relu', padding = 'same', kernel_initializer = 'he_normal')(inputs)
