@@ -169,7 +169,7 @@ def unet_S4(pretrained_weights = PRETRAINED_WEIGHTS,input_size = (TRAINING_IMAGE
     # model = Model(inputs = inputs, outputs = conv10)
     model = CustomModel(inputs = inputs, outputs = conv10, n_gradients=GRADIANT_ACCUMULATION)
 
-    model.compile(optimizer = Adam(lr = LEARNING_RATE), loss = 'categorical_crossentropy', metrics = [tf.keras.metrics.MeanSquaredError(name='mean_squared_error', dtype=None), IoU_metric])
+    model.compile(optimizer = Adam(lr = LEARNING_RATE), loss = ponderation_IoULoss, metrics = [tf.keras.metrics.MeanSquaredError(name='mean_squared_error', dtype=None), IoU_metric])
     
     model.summary()
 
